@@ -9,3 +9,4 @@ router.get("/", getIdeas);
 router.get("/:id", getIdea);
 
 export default router;
+

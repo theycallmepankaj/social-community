@@ -8,3 +8,4 @@ router.post("/:ideaId", auth, createComment);
 router.get("/:ideaId", getIdeasWithComments);
 
 export default router;
+
