@@ -5,27 +5,37 @@ import Idea from "../model/idea.model.js";
 
 export const createComment = async (req, res) => {
   try {
-    const comment = await Comment.create({ ...req.body, user: req.user.id });
-    
-    // update comment count on idea
-    const idea = await Idea.findById(req.body.idea);
-    if (idea) {
-      idea.commentsCount += 1;
-      await idea.save();
-    }
+    const { ideaId } = req.params;
+    const { text } = req.body;
+    const userId = req.user.id; // comes from auth middleware
 
-    res.status(201).json({message:"comment post Successfully",comment});
-  } catch (err) {
-    res.status(500).json({errorMessa:"internal server Error"});
+    // create comment
+    const comment = new Comment({ text, user: userId, idea: ideaId });
+    await comment.save();
+
+    // push comment to idea
+    await Idea.findByIdAndUpdate(ideaId, {
+      $push: { comments: comment._id },
+      $inc: { commentsCount: 1 }
+    });
+
+    res.status(201).json(comment);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
-export const getComments = async (req, res) => {
+export const getIdeasWithComments = async (req, res) => {
   try {
-    const comments = await Comment.find({ idea: req.params.ideaId })
-      .populate("user", "username");
-    res.json(comments);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    const ideas = await Idea.find()
+      .populate("user", "username")
+      .populate({
+        path: "comments",
+        populate: { path: "user", select: "username" }
+      });
+
+    res.json(ideas);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
